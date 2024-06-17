@@ -37,8 +37,8 @@ phases:
       - sed -i 's/TAG_PLACEHOLDER/'$IMAGE_TAG'/g' dep.yaml
       - echo Deploying to EKS...
       - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
-      - kubectl apply -f k8s/dep.yaml
-
+      #- kubectl apply -f k8s/dep.yaml
+      - kubectl get ns
 #artifacts:
 #  files:
 #    - '**/*'
