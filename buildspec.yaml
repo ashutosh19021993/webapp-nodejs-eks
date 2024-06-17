@@ -7,7 +7,7 @@ env:
     AWS_DEFAULT_REGION: "us-east-1" # Update with your region
     AWS_ACCOUNT_ID: "975049886518"  # Update with your AWS account ID
     IMAGE_REPO_NAME: "eks-codebuild" # Update with your ECR repository 
-
+    EKS_CLUSTER_NAME: "eks-test"
 
 phases:
   install:
@@ -17,6 +17,9 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - curl -LO "https://dl.k8s.io/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
   pre_build:
     commands:
       - echo Build started on `date`
@@ -28,11 +31,13 @@ phases:
     commands:
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-#  post_build:
-#    commands:
-#      - echo Build completed on `date`
-#      - echo Deploying to EKS...
-#      - kubectl apply -f k8s/deployment.yaml
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - sed -i 's/TAG_PLACEHOLDER/'$IMAGE_TAG'/g' dep.yaml
+      - echo Deploying to EKS...
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_DEFAULT_REGION
+      - kubectl apply -f dep.yaml
 
 #artifacts:
 #  files:
